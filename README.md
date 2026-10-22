@@ -1,35 +1,35 @@
 # MilestoneEscrow
 
-Intelligent Contract escrow cho công việc freelance/creative có tiêu chí chủ quan trên GenLayer.
+Intelligent Contract escrow for freelance/creative work with subjective criteria on GenLayer.
 
-## Mô tả
+## Description
 
-Contract cho phép:
-- Client tạo milestone, nạp tiền và ghi tiêu chí bằng ngôn ngữ tự nhiên
-- Freelancer nộp link deliverable
-- Contract tự fetch nội dung, dùng LLM đánh giá chất lượng
-- Validators đồng thuận theo Equivalence Principle
-- Tự động giải ngân nếu được approved
+This contract allows:
+- Clients to create a milestone, deposit funds, and define criteria in natural language
+- Freelancers to submit a deliverable URL
+- The contract to fetch the content and use an LLM to evaluate quality
+- Validators to reach consensus via the Equivalence Principle
+- Automatic fund release if the work is approved
 
-## Tính năng chính
+## Key Features
 
-- Sử dụng `gl.vm.run_nondet_unsafe` với leader/validator pattern
-- Validator tự thực hiện lại task rồi so sánh field quyết định (`approved` + `score`)
-- State design rõ ràng với `TreeMap` + `@allow_storage` dataclass
-- Hỗ trợ thanh toán (payable + emit_transfer)
+- Uses `gl.vm.run_nondet_unsafe` with a proper leader/validator pattern
+- Validators independently re-execute the task and compare decision fields (`approved` + `score`)
+- Clear state design with `TreeMap` + `@allow_storage` dataclass
+- Supports value transfers (payable + emit_transfer)
 
 ## Deployed
 
 - **Contract Address**: `0x55a9B18B2Cb25b86fc6aed3b27C6F077F5c798C0`
 - **Studio**: https://studio.genlayer.com
 
-## Cách sử dụng
+## Usage
 
-1. `create_milestone(freelancer, criteria)` — Client tạo mốc và nạp tiền
-2. `submit_deliverable(milestone_id, url)` — Freelancer nộp link công việc
-3. `resolve(milestone_id)` — Bất kỳ ai cũng có thể gọi để đánh giá và giải ngân
-4. `get_milestone(milestone_id)` — Xem thông tin mốc
+1. `create_milestone(freelancer, criteria)` — Client creates a milestone and deposits funds
+2. `submit_deliverable(milestone_id, url)` — Freelancer submits the work URL
+3. `resolve(milestone_id)` — Anyone can call this to evaluate and release funds
+4. `get_milestone(milestone_id)` — Retrieve milestone information
 
 ## Code
 
-Xem file [`milestone_escrow.py`](./milestone_escrow.py)
+See [`milestone_escrow.py`](./milestone_escrow.py)
