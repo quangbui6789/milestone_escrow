@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+declare global {
+  interface Window {
+    ethereum?: any;
+  }
+}
+
+import { useState } from "react";
 import { createClient } from "genlayer-js";
 import { studionet } from "genlayer-js/chains";
 
@@ -116,6 +122,7 @@ export default function Home() {
   };
 
   const resolveMilestone = async () => {
+    if (!account) return alert("Connect wallet first");
     setLoading(true);
     setStatus("Resolving... This may take a minute");
     try {
