@@ -1,7 +1,9 @@
-# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
+# v0.1.0
+# { "Depends": "py-genlayer:test" }
+
 from genlayer import *
+import typing
 import json
-from dataclasses import dataclass
 
 @allow_storage
 @dataclass
@@ -11,9 +13,10 @@ class Milestone:
     amount: u256
     criteria: str
     deliverable_url: str
-    status: str
+    status: str  # open, submitted, approved, rejected, refunded
     score: u32
     reasoning: str
+    approved: bool
 
 class MilestoneEscrow(gl.Contract):
     milestones: TreeMap[str, Milestone]
@@ -22,10 +25,10 @@ class MilestoneEscrow(gl.Contract):
     def __init__(self):
         self.next_id = u32(1)
 
-    @gl.public.write.payable
+    @gl.public.payable
     def create_milestone(self, freelancer: str, criteria: str) -> str:
         if gl.message.value == 0:
-            raise gl.vm.UserError("Must deposit funds")
+            raise gl.vm.UserError("Must send GEN")
         if not criteria:
             raise gl.vm.UserError("Criteria required")
 
@@ -40,76 +43,109 @@ class MilestoneEscrow(gl.Contract):
             deliverable_url="",
             status="open",
             score=u32(0),
-            reasoning=""
+            reasoning="",
+            approved=False,
         )
         return mid
 
     @gl.public.write
-    def submit_deliverable(self, milestone_id: str, url: str):
+    def submit_deliverable(self, milestone_id: str, deliverable_url: str):
         m = self.milestones.get(milestone_id)
         if m is None:
             raise gl.vm.UserError("Milestone not found")
         if gl.message.sender_address != m.freelancer:
-            raise gl.vm.UserError("Not the freelancer")
+            raise gl.vm.UserError("Only freelancer can submit")
         if m.status != "open":
-            raise gl.vm.UserError("Not in open status")
+            raise gl.vm.UserError("Invalid status")
 
-        m.deliverable_url = url
+        m.deliverable_url = deliverable_url
         m.status = "submitted"
-        self.milestones[milestone_id] = m
 
     @gl.public.write
     def resolve(self, milestone_id: str):
         m = self.milestones.get(milestone_id)
-        if m is None or m.status != "submitted":
-            raise gl.vm.UserError("Cannot resolve")
+        if m is None:
+            raise gl.vm.UserError("Milestone not found")
+        if m.status != "submitted":
+            raise gl.vm.UserError("Must be submitted first")
 
         def leader_fn():
-            response = gl.nondet.web.get(m.deliverable_url)
-            content = response.body.decode("utf-8")[:8000]
-
             prompt = f"""
-You are a professional freelance work evaluator.
-Client criteria: {m.criteria}
-Deliverable content:
-{content}
+You are evaluating a freelance deliverable.
 
-Evaluate whether the work meets the criteria.
-Return JSON in this exact format:
+Criteria: {m.criteria}
+Deliverable URL: {m.deliverable_url}
+
+Return ONLY a valid JSON object with exactly these fields:
 {{
   "approved": true or false,
-  "score": integer from 0 to 10,
-  "reasoning": "brief explanation"
+  "score": integer between 0 and 10,
+  "reasoning": "short explanation"
 }}
 """
-            raw = gl.nondet.exec_prompt(prompt, response_format="json")
-            return json.loads(raw)
+            result = gl.nondet.exec_prompt(prompt)
+            return result
 
-        def validator_fn(leader_result) -> bool:
-            if not isinstance(leader_result, gl.vm.Return):
-                return False
+        def validator_fn(leader_result):
             try:
-                my_result = leader_fn()
-                leader_data = leader_result.calldata
-                same_approved = leader_data["approved"] == my_result["approved"]
-                score_ok = abs(int(leader_data["score"]) - int(my_result["score"])) <= 1
-                return same_approved and score_ok
+                data = json.loads(leader_result)
+                approved = bool(data.get("approved"))
+                score = int(data.get("score", 0))
+                reasoning = str(data.get("reasoning", ""))
+
+                if not (0 <= score <= 10):
+                    return False
+                if not reasoning:
+                    return False
+                return True
             except Exception:
                 return False
 
         result = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
 
-        m.score = u32(int(result["score"]))
-        m.reasoning = result["reasoning"][:500]
-        m.status = "approved" if result["approved"] else "rejected"
-        self.milestones[milestone_id] = m
+        try:
+            data = json.loads(result)
+            approved = bool(data.get("approved"))
+            score = int(data.get("score", 0))
+            reasoning = str(data.get("reasoning", ""))
 
-        if result["approved"]:
-            gl.message.emit_transfer(
-                to=m.freelancer,
-                value=m.amount,
-                on="finalized"
-            )
+            # Validate again before storing
+            if not (0 <= score <= 10):
+                raise gl.vm.UserError("Invalid score")
+            if not isinstance(approved, bool):
+                raise gl.vm.UserError("Invalid approved")
+
+            m.approved = approved
+            m.score = u32(score)
+            m.reasoning = reasoning
+            m.status = "approved" if approved else "rejected"
+
+            if approved:
+                gl.message.emit_transfer(
+                    to=m.freelancer,
+                    value=m.amount,
+                    on="finalized"
+                )
+        except Exception as e:
+            raise gl.vm.UserError(f"Failed to parse result: {str(e)}")
+
+    @gl.public.write
+    def refund(self, milestone_id: str):
+        """Client can refund if rejected or still open (cancel)."""
+        m = self.milestones.get(milestone_id)
+        if m is None:
+            raise gl.vm.UserError("Milestone not found")
+        if gl.message.sender_address != m.client:
+            raise gl.vm.UserError("Only client can refund")
+        if m.status not in ("open", "rejected"):
+            raise gl.vm.UserError("Cannot refund in current status")
+
+        m.status = "refunded"
+        gl.message.emit_transfer(
+            to=m.client,
+            value=m.amount,
+            on="finalized"
+        )
 
     @gl.public.view
     def get_milestone(self, milestone_id: str):
