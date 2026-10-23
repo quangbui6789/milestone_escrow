@@ -129,17 +129,22 @@ export default function Home() {
   };
 
   const getMilestone = async () => {
+    if (!milestoneId) return alert("Enter Milestone ID");
     setLoading(true);
+    setStatus("Loading milestone...");
     try {
       const data = await client.readContract({
         address: CONTRACT_ADDRESS,
         functionName: "get_milestone",
         args: [milestoneId],
       });
+
+      console.log("Raw milestone data:", data);
       setMilestoneData(data);
       setStatus("Milestone loaded");
     } catch (e: any) {
       setStatus("Error loading: " + e.message);
+      console.error(e);
     }
     setLoading(false);
   };
@@ -235,7 +240,7 @@ export default function Home() {
         {milestoneData && (
           <div className="mt-6 p-6 bg-slate-900/70 border border-slate-800 rounded-2xl">
             <h3 className="font-semibold mb-3">Milestone Details</h3>
-            <pre className="text-sm text-slate-300 overflow-auto">
+            <pre className="text-sm text-slate-300 overflow-auto whitespace-pre-wrap">
               {JSON.stringify(milestoneData, null, 2)}
             </pre>
           </div>
