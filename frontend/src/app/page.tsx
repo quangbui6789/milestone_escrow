@@ -31,7 +31,7 @@ export default function Home() {
       setAccount(accounts[0]);
       await window.ethereum.request({
         method: "wallet_switchEthereumChain",
-        params: [{ chainId: "0xF22F" }], // 61999
+        params: [{ chainId: "0xF22F" }],
       });
     } catch (err: any) {
       if (err.code === 4902) {
@@ -61,22 +61,11 @@ export default function Home() {
       });
       await writeClient.connect("studionet");
 
-      const estimate = await writeClient.estimateTransactionFeesForWrite({
-        address: CONTRACT_ADDRESS,
-        functionName: "create_milestone",
-        args: [freelancer, criteria],
-        value: 1000000000000000000n, // 1 GEN
-      });
-
       const tx = await writeClient.writeContract({
         address: CONTRACT_ADDRESS,
         functionName: "create_milestone",
         args: [freelancer, criteria],
         value: 1000000000000000000n,
-        fees: {
-          distribution: estimate.distribution,
-          feeValue: estimate.feeValue,
-        },
       });
 
       setStatus(`Created! Tx: ${tx.slice(0, 10)}...`);
@@ -98,20 +87,10 @@ export default function Home() {
       });
       await writeClient.connect("studionet");
 
-      const estimate = await writeClient.estimateTransactionFeesForWrite({
-        address: CONTRACT_ADDRESS,
-        functionName: "submit_deliverable",
-        args: [milestoneId, deliverableUrl],
-      });
-
       const tx = await writeClient.writeContract({
         address: CONTRACT_ADDRESS,
         functionName: "submit_deliverable",
         args: [milestoneId, deliverableUrl],
-        fees: {
-          distribution: estimate.distribution,
-          feeValue: estimate.feeValue,
-        },
       });
 
       setStatus(`Submitted! Tx: ${tx.slice(0, 10)}...`);
@@ -133,20 +112,10 @@ export default function Home() {
       });
       await writeClient.connect("studionet");
 
-      const estimate = await writeClient.estimateTransactionFeesForWrite({
-        address: CONTRACT_ADDRESS,
-        functionName: "resolve",
-        args: [milestoneId],
-      });
-
       const tx = await writeClient.writeContract({
         address: CONTRACT_ADDRESS,
         functionName: "resolve",
         args: [milestoneId],
-        fees: {
-          distribution: estimate.distribution,
-          feeValue: estimate.feeValue,
-        },
       });
 
       setStatus(`Resolving... Tx: ${tx.slice(0, 10)}...`);
@@ -191,7 +160,6 @@ export default function Home() {
         </header>
 
         <div className="grid md:grid-cols-2 gap-6">
-          {/* Create */}
           <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6">
             <h2 className="text-xl font-semibold mb-4">Create Milestone</h2>
             <input
@@ -216,7 +184,6 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Submit + Resolve */}
           <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
             <h2 className="text-xl font-semibold">Manage Milestone</h2>
             <input
