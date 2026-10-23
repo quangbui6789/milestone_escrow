@@ -58,17 +58,18 @@ export default function Home() {
         chain: studionet,
         account: account as `0x${string}`,
         provider: window.ethereum,
-      });
+      }) as any;
+
       await writeClient.connect("studionet");
 
       const tx = await writeClient.writeContract({
         address: CONTRACT_ADDRESS,
         functionName: "create_milestone",
         args: [freelancer, criteria],
-        value: 1000000000000000000n,
+        value: BigInt("1000000000000000000"),
       });
 
-      setStatus(`Created! Tx: ${tx.slice(0, 10)}...`);
+      setStatus(`Created! Tx: ${String(tx).slice(0, 10)}...`);
     } catch (e: any) {
       setStatus("Error: " + e.message);
     }
@@ -84,7 +85,8 @@ export default function Home() {
         chain: studionet,
         account: account as `0x${string}`,
         provider: window.ethereum,
-      });
+      }) as any;
+
       await writeClient.connect("studionet");
 
       const tx = await writeClient.writeContract({
@@ -93,7 +95,7 @@ export default function Home() {
         args: [milestoneId, deliverableUrl],
       });
 
-      setStatus(`Submitted! Tx: ${tx.slice(0, 10)}...`);
+      setStatus(`Submitted! Tx: ${String(tx).slice(0, 10)}...`);
     } catch (e: any) {
       setStatus("Error: " + e.message);
     }
@@ -109,7 +111,8 @@ export default function Home() {
         chain: studionet,
         account: account as `0x${string}`,
         provider: window.ethereum,
-      });
+      }) as any;
+
       await writeClient.connect("studionet");
 
       const tx = await writeClient.writeContract({
@@ -118,7 +121,7 @@ export default function Home() {
         args: [milestoneId],
       });
 
-      setStatus(`Resolving... Tx: ${tx.slice(0, 10)}...`);
+      setStatus(`Resolving... Tx: ${String(tx).slice(0, 10)}...`);
     } catch (e: any) {
       setStatus("Error: " + e.message);
     }
