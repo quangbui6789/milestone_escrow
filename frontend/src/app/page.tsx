@@ -21,6 +21,7 @@ export default function Home() {
   const [deliverableUrl, setDeliverableUrl] = useState("");
   const [milestoneData, setMilestoneData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [lastCreatedId, setLastCreatedId] = useState("");
 
   const client = createClient({ chain: studionet });
 
@@ -69,7 +70,11 @@ export default function Home() {
         value: BigInt("1000000000000000000"),
       });
 
-      setStatus(`Created! Tx: ${String(tx).slice(0, 10)}...`);
+      // Giả định ID tăng dần, hiển thị gợi ý
+      const suggestedId = lastCreatedId ? String(Number(lastCreatedId) + 1) : "1";
+      setLastCreatedId(suggestedId);
+      setMilestoneId(suggestedId);
+      setStatus(`Created! Tx: ${String(tx).slice(0, 10)}... | Try Milestone ID: ${suggestedId}`);
     } catch (e: any) {
       setStatus("Error: " + e.message);
     }
@@ -139,12 +144,11 @@ export default function Home() {
         args: [milestoneId],
       });
 
-      console.log("Raw milestone data:", data);
+      console.log("Raw data:", data);
       setMilestoneData(data);
       setStatus("Milestone loaded");
     } catch (e: any) {
-      setStatus("Error loading: " + e.message);
-      console.error(e);
+      setStatus("Error: " + e.message);
     }
     setLoading(false);
   };
@@ -156,9 +160,7 @@ export default function Home() {
           <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
             MilestoneEscrow
           </h1>
-          <p className="text-slate-400 mt-3 text-lg">
-            AI-powered freelance escrow on GenLayer
-          </p>
+          <p className="text-slate-400 mt-3 text-lg">AI-powered freelance escrow on GenLayer</p>
           <button
             onClick={connectWallet}
             className="mt-6 px-6 py-3 bg-purple-600 hover:bg-purple-500 rounded-xl font-medium transition"
@@ -171,14 +173,14 @@ export default function Home() {
           <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6">
             <h2 className="text-xl font-semibold mb-4">Create Milestone</h2>
             <input
-              className="w-full mb-3 px-4 py-3 bg-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full mb-3 px-4 py-3 bg-slate-800 rounded-xl outline-none"
               placeholder="Freelancer address"
               value={freelancer}
               onChange={(e) => setFreelancer(e.target.value)}
             />
             <textarea
-              className="w-full mb-3 px-4 py-3 bg-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="Criteria (natural language)"
+              className="w-full mb-3 px-4 py-3 bg-slate-800 rounded-xl outline-none"
+              placeholder="Criteria"
               rows={3}
               value={criteria}
               onChange={(e) => setCriteria(e.target.value)}
@@ -207,32 +209,15 @@ export default function Home() {
               onChange={(e) => setDeliverableUrl(e.target.value)}
             />
             <div className="flex gap-3">
-              <button
-                onClick={submitDeliverable}
-                disabled={loading}
-                className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl disabled:opacity-50"
-              >
-                Submit
-              </button>
-              <button
-                onClick={resolveMilestone}
-                disabled={loading}
-                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl disabled:opacity-50"
-              >
-                Resolve
-              </button>
+              <button onClick={submitDeliverable} disabled={loading} className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl disabled:opacity-50">Submit</button>
+              <button onClick={resolveMilestone} disabled={loading} className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl disabled:opacity-50">Resolve</button>
             </div>
-            <button
-              onClick={getMilestone}
-              className="w-full py-3 bg-slate-800 hover:bg-slate-700 rounded-xl"
-            >
-              View Milestone
-            </button>
+            <button onClick={getMilestone} className="w-full py-3 bg-slate-800 hover:bg-slate-700 rounded-xl">View Milestone</button>
           </div>
         </div>
 
         {status && (
-          <div className="mt-6 p-4 bg-slate-900 border border-slate-800 rounded-xl text-sm">
+          <div className="mt-6 p-4 bg-slate-900 border border-slate-800 rounded-xl text-sm whitespace-pre-wrap">
             {status}
           </div>
         )}
